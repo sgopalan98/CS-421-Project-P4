@@ -93,7 +93,6 @@ def extract_user_info(user_input):
     dateOfBirth = ""
 
     # [YOUR CODE HERE]
-    print(user_input)
     matches = re.search(r'(^|\s)(((01)|(02)|(03)|(04)|(05)|(06)|(07)|(08)|(09)|(10)|(11)|(12))/((0[1-9])|(1[0-9])|(2[0-9])|(3[01]))/([0-9][0-9]))( |$)', user_input)
     if matches!=None:
         dateOfBirth = matches.group(2)
@@ -228,11 +227,9 @@ def train_nb_model(training_data, training_labels):
 def train_model(model, word2vec, training_documents, training_labels):
     # Write your code here:
     input_data = []
-    print(training_labels)
     for text in training_documents:
         input_data.append(np.asfarray(string2vec(word2vec, text)))
     # dense_training_data = training_documents.todense()
-    print(np.array(input_data).shape, np.array(training_labels).shape)
     model.fit(np.array(input_data),np.array(training_labels))
     
     return model
@@ -263,7 +260,7 @@ def test_model(model, word2vec, test_documents, test_labels):
     output_data = model.predict(output_data)    
     precision = precision_score(test_labels, output_data)
     recall = recall_score(test_labels, output_data)
-    f1 = fbeta_score(test_labels, output_data, beta = 1.2)
+    f1 = f1_score(test_labels, output_data)
     
     accuracy = accuracy_score(test_labels, output_data)
 
@@ -351,7 +348,6 @@ def get_pos_tags(user_input):
     for sent in sentences:
         tokens = nltk.word_tokenize(sent)
         filtered_tokens = list(filter(lambda token: token != '.', tokens))
-        print(filtered_tokens)
         tagged_input.extend(nltk.pos_tag(filtered_tokens))
 
     return tagged_input
@@ -408,7 +404,6 @@ def count_negations(user_input):
     sentences = list(nltk.tokenize.sent_tokenize(user_input))
     for sent in sentences:
         tokens = nltk.word_tokenize(sent)
-        print(tokens)
         for token in tokens:   
             if token in ["no", "not", "never", "n't"]:
                 num_negations += 1
@@ -499,9 +494,9 @@ def summarize_analysis(num_words, wps, num_pronouns, num_prp, num_articles, num_
 def welcome_state():
     # Display a welcome message to the user
     # *** Replace the line below with your updated welcome message from Project Part 1 ***
-    print("Hello, this is your HealthAssistant; What is your name and date of birth? Enter this information in the form: First Last MM/DD/YY\n")
+    print("Hello, this is your HealthAssistant; I will help you with checking your health condition and determining your writing style")
 
-    return ""
+    return "get_info_state"
 
 
 # ***** New in Project Part 4! *****
@@ -521,7 +516,7 @@ def get_info_state():
     name, dob = extract_user_info(user_input)
     print("Thanks {0}!  I'll make a note that you were born on {1}".format(name, dob))
 
-    return ""
+    return "health_check_state"
 
 
 # ***** New in Project Part 4! *****
@@ -547,7 +542,10 @@ def health_check_state(model, word2vec, first_time=False):
     else:
         print("Hmm, that's weird.  My classifier predicted a value of: {0}".format(label))
 
-    return ""
+    if first_time:
+        return "stylistic_analysis_state"
+    
+    return "check_next_state"
 
 
 # ***** New in Project Part 4! *****
@@ -581,7 +579,7 @@ def stylistic_analysis_state():
         print("- {0}".format(correlate))
 
 
-    return ""
+    return "check_next_state"
 
 
 # ***** New in Project Part 4! *****
@@ -603,10 +601,10 @@ def check_next_state():
         print("3. Quit")
         option = input("")
         if option.isdigit():
-            option = int(input())
+            option = int(option)
         else:
             option = 4
-        mapping = {1 : "health_check", 2: "stylistic analysis", 3: "quit"}
+        mapping = {1 : "health_check_state", 2: "stylistic_analysis_state", 3: "quit"}
         option = mapping.get(option, "re-enter")
         if option != "re-enter":
             break
@@ -636,9 +634,36 @@ def check_next_state():
 #                                  stylistic_analysis_state() (OUT STATE option 2) or
 #                                  terminate chatbot
 def run_chatbot(model, word2vec):
-    # [YOUR CODE HERE]
-    state = check_next_state()
-    print(state)
+    
+    current_state = "welcome_state"
+    times_health_check_run = 0
+    while(current_state != "quit"):
+
+        if current_state == "welcome_state":
+
+            current_state = welcome_state()
+
+        elif current_state == "get_info_state":
+
+            current_state = get_info_state()
+
+        elif current_state == "health_check_state":
+            
+            if times_health_check_run > 0:
+                first_time = False
+            else:
+                first_time = True
+            
+            current_state = health_check_state(model, word2vec, first_time)
+            times_health_check_run += 1
+            
+        elif current_state == "stylistic_analysis_state":
+
+            current_state = stylistic_analysis_state()
+
+        elif current_state == "check_next_state":
+
+            current_state = check_next_state()
 
     return
 
@@ -655,34 +680,34 @@ if __name__ == "__main__":
 
     # # Instantiate and train the machine learning models
     logistic, svm, mlp = instantiate_models()
-    # logistic = train_model(logistic, word2vec, lexicon, labels)
-    # svm = train_model(svm, word2vec, lexicon, labels)
-    # mlp = train_model(mlp, word2vec, lexicon, labels)
+    logistic = train_model(logistic, word2vec, lexicon, labels)
+    svm = train_model(svm, word2vec, lexicon, labels)
+    mlp = train_model(mlp, word2vec, lexicon, labels)
 
-    # # Uncomment the line below to test out the w2v() function.  Make sure to
-    # # try a few words that are unlikely to exist in its dictionary (e.g.,
-    # # "covid") to see how it handles those.
-    # # print("Word2Vec embedding for {0}:\t{1}".format("vaccine", w2v(word2vec, "vaccine")))
+    # Uncomment the line below to test out the w2v() function.  Make sure to
+    # try a few words that are unlikely to exist in its dictionary (e.g.,
+    # "covid") to see how it handles those.
+    # print("Word2Vec embedding for {0}:\t{1}".format("vaccine", w2v(word2vec, "vaccine")))
 
-    # # Test the machine learning models to see how they perform on the small
-    # # test set provided.  Write a classification report to a CSV file with this
-    # # information.
-    # test_data, test_labels = load_as_list("test.csv")
+    # Test the machine learning models to see how they perform on the small
+    # test set provided.  Write a classification report to a CSV file with this
+    # information.
+    test_data, test_labels = load_as_list("test.csv")
 
-    # models = [logistic, svm, mlp]
-    # model_names = ["Logistic Regression", "SVM", "Multilayer Perceptron"]
-    # outfile = open("classification_report.csv", "w")
-    # outfile_writer = csv.writer(outfile)
-    # outfile_writer.writerow(["Name", "Precision", "Recall", "F1", "Accuracy"]) # Header row
-    # i = 0
-    # while i < len(models): # Loop through other results
-    #     p, r, f, a = test_model(models[i], word2vec, test_data, test_labels)
-    #     if models[i] == None: # Models will be null if functions have not yet been implemented
-    #         outfile_writer.writerow([model_names[i],"N/A"])
-    #     else:
-    #         outfile_writer.writerow([model_names[i], p, r, f, a])
-    #     i += 1
-    # outfile.close()
+    models = [logistic, svm, mlp]
+    model_names = ["Logistic Regression", "SVM", "Multilayer Perceptron"]
+    outfile = open("classification_report.csv", "w")
+    outfile_writer = csv.writer(outfile)
+    outfile_writer.writerow(["Name", "Precision", "Recall", "F1", "Accuracy"]) # Header row
+    i = 0
+    while i < len(models): # Loop through other results
+        p, r, f, a = test_model(models[i], word2vec, test_data, test_labels)
+        if models[i] == None: # Models will be null if functions have not yet been implemented
+            outfile_writer.writerow([model_names[i],"N/A"])
+        else:
+            outfile_writer.writerow([model_names[i], p, r, f, a])
+        i += 1
+    outfile.close()
 
     # For reference, let us also compute the accuracy for the Naive Bayes model from Project Part 1
     # Fill in the code templates from your previous submission and uncomment the code below
