@@ -495,7 +495,7 @@ def welcome_state():
     # Display a welcome message to the user
     # *** Replace the line below with your updated welcome message from Project Part 1 ***
     print("Hello, this is your HealthAssistant; I will help you with checking your health condition and determining your writing style")
-
+    print()
     return "get_info_state"
 
 
@@ -510,11 +510,12 @@ def get_info_state():
     # Request the user's name and date of birth, and accept a user response of
     # arbitrary length
     # *** Replace the line below with your updated message from Project Part 1 ***
-    user_input = input("What is your name and date of birth? Enter this information in the form: First Last MM/DD/YY\n")
+    user_input = input("What is your name and date of birth? Enter this information in the form: FirstName LastName MM/DD/YY\nInput: ")
 
     # Extract the user's name and date of birth
     name, dob = extract_user_info(user_input)
     print("Thanks {0}!  I'll make a note that you were born on {1}".format(name, dob))
+    print()
 
     return "health_check_state"
 
@@ -530,7 +531,7 @@ def get_info_state():
 # and then processes their response to predict their current health status.
 def health_check_state(model, word2vec, first_time=False):
     # Check the user's current health
-    user_input = input("How are you feeling today?")
+    user_input = input("How are you feeling today?\nInput: ")
 
     # Predict whether the user is healthy or unhealthy
     w2v_test = string2vec(word2vec, user_input)
@@ -541,7 +542,7 @@ def health_check_state(model, word2vec, first_time=False):
         print("Oh no!  It sounds like you're unhealthy.")
     else:
         print("Hmm, that's weird.  My classifier predicted a value of: {0}".format(label))
-
+    print()
     if first_time:
         return "stylistic_analysis_state"
     
@@ -557,7 +558,7 @@ def health_check_state(model, word2vec, first_time=False):
 # then analyzes their response to identify informative linguistic correlates to
 # psychological status.
 def stylistic_analysis_state():
-    user_input = input("I'd also like to do a quick stylistic analysis. What's on your mind today?\n")
+    user_input = input("I'd also like to do a quick stylistic analysis. What's on your mind today?\nInput: ")
 
     num_words = count_words(user_input)
     wps = words_per_sentence(user_input)
@@ -575,9 +576,10 @@ def stylistic_analysis_state():
                                                 num_prp, num_articles, num_past,
                                                 num_future, num_prep, num_negations)
     print("Thanks!  Based on my stylistic analysis, I've identified the following psychological correlates in your response:")
+    print()
     for correlate in informative_correlates:
         print("- {0}".format(correlate))
-
+    print()
 
     return "check_next_state"
 
@@ -599,7 +601,8 @@ def check_next_state():
         print("1. Health-check")
         print("2. Stylistic analysis")
         print("3. Quit")
-        option = input("")
+        print()
+        option = input("Input: ")
         if option.isdigit():
             option = int(option)
         else:
